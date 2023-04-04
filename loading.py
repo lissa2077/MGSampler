@@ -13,14 +13,15 @@ import random
 from mmcv.fileio import FileClient
 from torch.nn.modules.utils import _pair
 
-import cv2
 from ...utils import get_random_string, get_shm_dir, get_thread_id
 from ..builder import PIPELINES
 
 #import json
 #json_path=""
+import cv2
 import imageio
 from skimage.metrics import structural_similarity
+from pathlib import Path
 
 @PIPELINES.register_module()
 class LoadHVULabel:
@@ -238,7 +239,7 @@ class SampleFrames:
                 idx = (np.abs(array - value)).argmin()
                 return int(idx + 1)
             except(ValueError):
-                print(results['filename'])
+                print('MG Sampler ValueError!',results['filename'])
         #print("results",results)
         if 'img_diff' in results:
             diff_score = results['img_diff']
@@ -251,19 +252,33 @@ class SampleFrames:
             '''
             img = list()
             diff_score = list()
+            if "filename" in results:
+              vid = imageio.get_reader(results['filename'], 'ffmpeg')
+              for num, im in enumerate(vid):
+                img.append(im)
+            elif "frame_dir" in results:
+              for file in Path(results["frame_dir"]).iterdir():
+                if not file.is_file():
+                    continue
+                img.append(imageio.imread(file))
+            else:
+              print('MG Sampler error!',results)
+              raise KeyError("No 'filename' and 'frame_dir' in results")
+            
             try:
-                vid = imageio.get_reader(results['filename'], 'ffmpeg')
-                for num, im in enumerate(vid):
-                    img.append(im)
-                for i in range(len(img) - 1):
-                    tmp1 = cv2.cvtColor(img[i], cv2.COLOR_RGB2GRAY)
-                    tmp2 = cv2.cvtColor(img[i + 1], cv2.COLOR_RGB2GRAY)
-                    (score, diff) = structural_similarity(tmp1, tmp2, full=True)
-                    score = 1 - score
+              for i in range(len(img) - 1):
+                  tmp1 = cv2.cvtColor(img[i], cv2.COLOR_RGB2GRAY)
+                  tmp2 = cv2.cvtColor(img[i + 1], cv2.COLOR_RGB2GRAY)
+                  (score, diff) = structural_similarity(tmp1, tmp2, full=True)
+                  score = 1 - score
 
-                    diff_score.append(score)
+                  diff_score.append(score)
             except(OSError):
-                print('MG Sampler error!',video_name)
+                print('MG Sampler OSError!',results['filename'])
+            except(KeyError):
+                print('MG Sampler KeyError!',results)
+            
+
 
         diff_score = np.power(diff_score, 0.5)
         sum_num = np.sum(diff_score)
