@@ -22,6 +22,7 @@ import cv2
 import imageio
 from skimage.metrics import structural_similarity
 from pathlib import Path
+from natsort import natsorted
 
 @PIPELINES.register_module()
 class LoadHVULabel:
@@ -257,10 +258,13 @@ class SampleFrames:
               for num, im in enumerate(vid):
                 img.append(im)
             elif "frame_dir" in results:
-              for file in Path(results["frame_dir"]).iterdir():
-                if not file.is_file():
-                    continue
-                img.append(imageio.imread(file))
+                
+                frame_list = Path(results["frame_dir"]).iterdir()
+                frame_list = natsorted(frame_list, key=str)
+                for file in frame_list:
+                    if not file.is_file() or str(file)[0] == ".":
+                        continue
+                    img.append(imageio.imread(file))
             else:
               print('MG Sampler error!',results)
               raise KeyError("No 'filename' and 'frame_dir' in results")
