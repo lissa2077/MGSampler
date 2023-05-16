@@ -24,5 +24,6 @@ pip install -v -e .  # or "python setup.py develop"
 
 
 ## Overview
+This repo is just use Image-level, not Fature-level
 This is forked from [MCG-NJU/MGSampler](https://github.com/MCG-NJU/MGSampler). Combined its part of changes for easily matching to new version [mmaction2](https://github.com/open-mmlab/mmaction2) in future use.
 The git project [MCG-NJU/MGSampler](https://github.com/MCG-NJU/MGSampler) is the implementation of [MGSampler](https://arxiv.org/abs/2104.09952) and its code is based on [mmaction2](https://github.com/open-mmlab/mmaction2).
